@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>מעקב שעות עבודה</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>שעות העבודה של תבורי</h1>
+      <nav class="app-nav">
+        <a class="nav-link" href="index.html" aria-current="page">היום</a>
+        <a class="nav-link" href="month.html">חודשי</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <h2>רישום להיום</h2>
+        <form id="today-form" class="form">
+          <div class="field">
+            <label for="work-date">תאריך</label>
+            <input type="date" id="work-date" name="work-date" required />
+          </div>
+
+          <div class="field">
+            <label for="start-time">שעת התחלה</label>
+            <input type="time" id="start-time" name="start-time" required />
+          </div>
+
+          <div class="field">
+            <label for="end-time">שעת סיום</label>
+            <input type="time" id="end-time" name="end-time" required />
+          </div>
+
+          <div class="field">
+            <label for="location">מיקום</label>
+            <input
+              type="text"
+              id="location"
+              name="location"
+              placeholder="משרד, אתר לקוח..."
+              autocomplete="off"
+            />
+          </div>
+
+          <button class="primary-btn" type="submit">שמירה</button>
+        </form>
+        <p id="today-summary" class="summary"></p>
+      </section>
+
+      <section class="card">
+        <h2>רישומים אחרונים</h2>
+        <ul id="recent-list" class="list"></ul>
+      </section>
+    </main>
+
+    <script src="scripts.js"></script>
+  </body>
+</html>

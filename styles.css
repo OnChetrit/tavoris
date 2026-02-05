@@ -1,0 +1,293 @@
+:root {
+  color-scheme: light;
+  --bg: #f5f6fb;
+  --card: #ffffff;
+  --primary: #2f6bff;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app-header {
+  padding: 1.5rem 1.25rem 1rem;
+  background: var(--card);
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.app-header h1 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: #f1f5ff;
+}
+
+.nav-link[aria-current="page"] {
+  color: var(--primary);
+  background: #dbe7ff;
+}
+
+.container {
+  padding: 1.5rem 1.25rem 3rem;
+  display: grid;
+  gap: 1.25rem;
+}
+
+.card {
+  background: var(--card);
+  padding: 1.25rem;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+input {
+  padding: 0.7rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  font-size: 1rem;
+}
+
+.primary-btn {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.ghost-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.6rem 0.9rem;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.summary {
+  margin: 1rem 0 0;
+  color: var(--muted);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.list-item {
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.list-item span {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+.month-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.month-metrics {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  margin-bottom: 1.25rem;
+}
+
+.metric {
+  background: #f8fafc;
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.metric-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metric-value {
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  /* min-width: 480px; */
+}
+
+.summary-table th,
+.summary-table td {
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .summary-table thead {
+    display: none;
+  }
+
+  .summary-table,
+  .summary-table tbody,
+  .summary-table tr,
+  .summary-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .summary-table tr {
+    background: #f8fafc;
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    padding: 0.25rem 0.75rem;
+  }
+
+  .summary-table td {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 0.5rem;
+    border: none;
+    padding: 0.4rem 0;
+  }
+
+  .summary-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  .table-wrap {
+    overflow-x: visible;
+  }
+}
+
+@media (min-width: 768px) {
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .app-header {
+    padding: 2rem 2.5rem 1.5rem;
+  }
+}
+
+@media print {
+  body {
+    background: white;
+  }
+
+  .app-header,
+  .month-actions,
+  .nav-link {
+    display: none !important;
+  }
+
+  .card {
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .summary-table {
+    min-width: auto;
+  }
+
+  .summary-table thead {
+    display: table-header-group;
+  }
+
+  .summary-table,
+  .summary-table tbody {
+    display: table;
+    width: 100%;
+  }
+
+  .summary-table tr {
+    display: table-row;
+  }
+
+  .summary-table td,
+  .summary-table th {
+    display: table-cell;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid #ddd;
+  }
+}

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>סיכום חודשי</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>סיכום חודשי</h1>
+      <nav class="app-nav">
+        <a class="nav-link" href="index.html">היום</a>
+        <a class="nav-link" href="month.html" aria-current="page">חודשי</a>
+      </nav>
+    </header>
+
+    <main class="container">
+      <section class="card">
+        <div class="month-header">
+          <div>
+            <label for="month-picker">חודש</label>
+            <input lang="he" type="month" id="month-picker" name="month-picker" />
+          </div>
+          <div class="month-actions">
+            <button id="export-csv" class="ghost-btn" type="button">
+              ייצוא לגיליון
+            </button>
+            <button id="export-pdf" class="primary-btn" type="button">
+              ייצוא ל‑PDF
+            </button>
+            <button id="clear-month" class="ghost-btn" type="button">
+              ניקוי חודש
+            </button>
+          </div>
+        </div>
+
+        <div class="month-metrics">
+          <div class="metric">
+            <span class="metric-label">סך שעות</span>
+            <span class="metric-value" id="month-total">0.0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">רישומים</span>
+            <span class="metric-value" id="month-count">0</span>
+          </div>
+          <div class="metric">
+            <span class="metric-label">ממוצע ליום</span>
+            <span class="metric-value" id="month-average">0.0</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th>תאריך</th>
+                <th>התחלה</th>
+                <th>סיום</th>
+                <th>שעות</th>
+                <th>מיקום</th>
+              </tr>
+            </thead>
+            <tbody id="month-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="scripts.js"></script>
+  </body>
+</html>
