@@ -1,6 +1,33 @@
 const STORAGE_KEY = "work-hours-entries";
+const THEME_KEY = "work-hours-theme";
 
 const byId = (id) => document.getElementById(id);
+
+const applyTheme = (theme) => {
+  document.documentElement.setAttribute("data-theme", theme);
+  const toggle = byId("theme-toggle");
+  if (toggle) {
+    toggle.textContent = theme === "dark" ? "☀️" : "🌙";
+  }
+};
+
+const initThemeToggle = () => {
+  const saved = localStorage.getItem(THEME_KEY);
+  const prefersDark = window.matchMedia?.("(prefers-color-scheme: dark)")
+    .matches;
+  const initial = saved || (prefersDark ? "dark" : "light");
+  applyTheme(initial);
+
+  const toggle = byId("theme-toggle");
+  if (!toggle) return;
+  toggle.addEventListener("click", () => {
+    const current =
+      document.documentElement.getAttribute("data-theme") || "light";
+    const next = current === "dark" ? "light" : "dark";
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  });
+};
 
 const toHours = (start, end) => {
   const [sh, sm] = start.split(":").map(Number);
@@ -23,6 +50,24 @@ const saveEntries = (entries) => {
 const sortEntries = (entries) =>
   entries.sort((a, b) => new Date(b.date) - new Date(a.date));
 
+const formatDisplayDate = (isoDate) => {
+  const date = new Date(`${isoDate}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+
+  const parts = new Intl.DateTimeFormat("he-IL", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  }).formatToParts(date);
+
+  const day = parts.find((part) => part.type === "day")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const weekday = parts.find((part) => part.type === "weekday")?.value;
+
+  if (!day || !month || !weekday) return isoDate;
+  return `${day} ${month} ${weekday}`;
+};
+
 const renderRecentEntries = (entries) => {
   const list = byId("recent-list");
   if (!list) return;
@@ -41,14 +86,54 @@ const renderRecentEntries = (entries) => {
     .forEach((entry) => {
       const item = document.createElement("li");
       item.className = "list-item";
+      item.dataset.entryId = entry.id;
       item.innerHTML = `
-        <strong>${entry.date}</strong>
-        <span>${entry.start} → ${entry.end}</span>
-        <span>${entry.location}</span>
-        <span>${entry.hours.toFixed(2)} שעות</span>
+        <strong class="entry-date">${formatDisplayDate(entry.date)}</strong>
+        <span class="entry-time">${entry.start} → ${entry.end}</span>
+        <span class="entry-location">${entry.location}</span>
+        <span class="entry-hours">${entry.hours.toFixed(2)} שעות</span>
       `;
       list.appendChild(item);
     });
+};
+
+const renderLocationOptions = (entries) => {
+  const datalist = byId("location-options");
+  if (!datalist) return;
+
+  const locations = Array.from(
+    new Set(
+      entries
+        .map((entry) => entry.location)
+        .filter((location) => location && location.trim())
+    )
+  ).sort((a, b) => a.localeCompare(b, "he"));
+
+  datalist.innerHTML = "";
+  locations.forEach((location) => {
+    const option = document.createElement("option");
+    option.value = location;
+    datalist.appendChild(option);
+  });
+};
+
+const updateTodayStatus = (entries, today) => {
+  const status = byId("today-status");
+  if (!status) return;
+
+  const todayEntries = entries.filter((entry) => entry.date === today);
+  if (todayEntries.length === 0) {
+    status.hidden = true;
+    status.textContent = "";
+    return;
+  }
+
+  const totalHours = todayEntries.reduce(
+    (sum, entry) => sum + entry.hours,
+    0
+  );
+  status.textContent = `כבר נרשמו היום ${totalHours.toFixed(2)} שעות.`;
+  status.hidden = false;
 };
 
 const updateTodaySummary = (entry) => {
@@ -66,11 +151,48 @@ const initTodayPage = () => {
   if (!form) return;
 
   const dateInput = byId("work-date");
+  const saveButton = byId("save-button");
+  const startInput = byId("start-time");
+  const endInput = byId("end-time");
   const today = new Date().toISOString().split("T")[0];
   dateInput.value = today;
 
   const entries = loadEntries();
   renderRecentEntries(entries);
+  renderLocationOptions(entries);
+  updateTodayStatus(entries, today);
+
+  const recentList = byId("recent-list");
+  recentList?.addEventListener("click", (event) => {
+    const target = event.target.closest(".list-item");
+    if (!target) return;
+    const entryId = target.dataset.entryId;
+    if (!entryId) return;
+
+    const entry = entries.find((item) => item.id === entryId);
+    if (!entry) return;
+
+    dateInput.value = entry.date;
+    startInput.value = entry.start;
+    endInput.value = entry.end;
+    const locationInput = byId("location");
+    if (locationInput) {
+      locationInput.value = entry.location;
+    }
+    updateSaveState();
+  });
+
+  const updateSaveState = () => {
+    if (!saveButton) return;
+    const start = startInput?.value || "";
+    const end = endInput?.value || "";
+    const hours = start && end ? toHours(start, end) : 0;
+    saveButton.disabled = hours <= 0;
+  };
+
+  startInput?.addEventListener("input", updateSaveState);
+  endInput?.addEventListener("input", updateSaveState);
+  updateSaveState();
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -89,6 +211,12 @@ const initTodayPage = () => {
       return;
     }
 
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.classList.add("is-loading");
+      saveButton.textContent = "שומר...";
+    }
+
     const entry = {
       id: crypto.randomUUID(),
       date,
@@ -98,12 +226,24 @@ const initTodayPage = () => {
       hours,
     };
 
-    const updated = [...entries, entry];
-    saveEntries(updated);
+    const updated = entries.filter((existing) => existing.date !== date);
+    updated.push(entry);
+    entries.length = 0;
+    entries.push(...updated);
+
+    saveEntries(entries);
     updateTodaySummary(entry);
-    renderRecentEntries(updated);
+    renderRecentEntries(entries);
+    renderLocationOptions(entries);
+    updateTodayStatus(entries, today);
     form.reset();
     dateInput.value = today;
+
+    if (saveButton) {
+      saveButton.classList.remove("is-loading");
+      saveButton.textContent = "שמירה";
+    }
+    updateSaveState();
   });
 };
 
@@ -120,6 +260,9 @@ const renderMonthPage = () => {
   const clearButton = byId("clear-month");
   const exportCsvButton = byId("export-csv");
   const exportPdfButton = byId("export-pdf");
+  const confirmModal = byId("confirm-modal");
+  const confirmAccept = byId("confirm-accept");
+  const confirmCancel = byId("confirm-cancel");
 
   const entries = loadEntries();
   const currentMonth = formatMonth(new Date());
@@ -143,9 +286,8 @@ const renderMonthPage = () => {
         .forEach((entry) => {
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td data-label="תאריך">${entry.date}</td>
-            <td data-label="התחלה">${entry.start}</td>
-            <td data-label="סיום">${entry.end}</td>
+            <td data-label="תאריך">${formatDisplayDate(entry.date)}</td>
+            <td data-label="שעות">${entry.start} - ${entry.end}</td>
             <td data-label="שעות">${entry.hours.toFixed(2)}</td>
             <td data-label="מיקום">${entry.location}</td>
           `;
@@ -204,7 +346,26 @@ const renderMonthPage = () => {
     window.print();
   });
 
+  const closeModal = () => {
+    if (confirmModal) confirmModal.hidden = true;
+  };
+
+  const openModal = () => {
+    if (confirmModal) confirmModal.hidden = false;
+  };
+
   clearButton.addEventListener("click", () => {
+    openModal();
+  });
+
+  confirmCancel?.addEventListener("click", closeModal);
+  confirmModal?.addEventListener("click", (event) => {
+    if (event.target?.dataset?.close) {
+      closeModal();
+    }
+  });
+
+  confirmAccept?.addEventListener("click", () => {
     const selected = monthPicker.value;
     const remaining = entries.filter(
       (entry) => !entry.date.startsWith(selected)
@@ -213,10 +374,12 @@ const renderMonthPage = () => {
     entries.length = 0;
     entries.push(...remaining);
     render();
+    closeModal();
   });
 
   render();
 };
 
+initThemeToggle();
 initTodayPage();
 renderMonthPage();

@@ -8,44 +8,83 @@
   </head>
   <body>
     <header class="app-header">
-      <h1>שעות העבודה של תבורי</h1>
+      <div class="header-row">
+        <h1>תבורי'ס</h1>
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          type="button"
+          aria-label="החלפת מצב תצוגה"
+        >
+          🌙
+        </button>
+      </div>
       <nav class="app-nav">
-        <a class="nav-link" href="index.html" aria-current="page">היום</a>
+        <a class="nav-link" href="index.html" aria-current="page">דיווח</a>
         <a class="nav-link" href="month.html">חודשי</a>
       </nav>
+      <div id="today-status" class="top-info" hidden></div>
     </header>
 
     <main class="container">
       <section class="card">
-        <h2>רישום להיום</h2>
+        <h2>דיווח שעות</h2>
         <form id="today-form" class="form">
           <div class="field">
             <label for="work-date">תאריך</label>
-            <input type="date" id="work-date" name="work-date" required />
+            <div class="input-with-icon">
+              <span
+                class="input-icon input-icon--calendar"
+                aria-hidden="true"
+              ></span>
+              <input type="date" id="work-date" name="work-date" required />
+            </div>
           </div>
 
           <div class="field">
             <label for="start-time">שעת התחלה</label>
-            <input type="time" id="start-time" name="start-time" required />
+            <div class="input-with-icon">
+              <span
+                class="input-icon input-icon--timer"
+                aria-hidden="true"
+              ></span>
+              <input type="time" id="start-time" name="start-time" required />
+            </div>
           </div>
 
           <div class="field">
             <label for="end-time">שעת סיום</label>
-            <input type="time" id="end-time" name="end-time" required />
+            <div class="input-with-icon">
+              <span
+                class="input-icon input-icon--clock"
+                aria-hidden="true"
+              ></span>
+              <input type="time" id="end-time" name="end-time" required />
+            </div>
           </div>
 
           <div class="field">
             <label for="location">מיקום</label>
-            <input
-              type="text"
-              id="location"
-              name="location"
-              placeholder="משרד, אתר לקוח..."
-              autocomplete="off"
-            />
+            <div class="input-with-icon">
+              <span
+                class="input-icon input-icon--location"
+                aria-hidden="true"
+              ></span>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                placeholder="משרד, אתר לקוח..."
+                autocomplete="off"
+                list="location-options"
+              />
+            </div>
+            <datalist id="location-options"></datalist>
           </div>
 
-          <button class="primary-btn" type="submit">שמירה</button>
+          <button id="save-button" class="primary-btn" type="submit">
+            שמירה
+          </button>
         </form>
         <p id="today-summary" class="summary"></p>
       </section>
