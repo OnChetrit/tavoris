@@ -8,9 +8,19 @@
   </head>
   <body>
     <header class="app-header">
-      <h1>סיכום חודשי</h1>
+      <div class="header-row">
+        <h1>סיכום חודשי</h1>
+        <button
+          id="theme-toggle"
+          class="theme-toggle"
+          type="button"
+          aria-label="החלפת מצב תצוגה"
+        >
+          🌙
+        </button>
+      </div>
       <nav class="app-nav">
-        <a class="nav-link" href="index.html">היום</a>
+        <a class="nav-link" href="index.html">דיווח</a>
         <a class="nav-link" href="month.html" aria-current="page">חודשי</a>
       </nav>
     </header>
@@ -18,10 +28,10 @@
     <main class="container">
       <section class="card">
         <div class="month-header">
-          <div>
+          <section>
             <label for="month-picker">חודש</label>
             <input lang="he" type="month" id="month-picker" name="month-picker" />
-          </div>
+          </section>
           <div class="month-actions">
             <button id="export-csv" class="ghost-btn" type="button">
               ייצוא לגיליון
@@ -66,6 +76,22 @@
         </div>
       </section>
     </main>
+
+    <div id="confirm-modal" class="modal" hidden>
+      <div class="modal-backdrop" data-close="true"></div>
+      <div class="modal-content" role="dialog" aria-modal="true">
+        <h3>לאשר ניקוי חודש?</h3>
+        <p>הפעולה תמחק לצמיתות את כל הרישומים של החודש הנבחר.</p>
+        <div class="modal-actions">
+          <button id="confirm-cancel" class="ghost-btn" type="button">
+            ביטול
+          </button>
+          <button id="confirm-accept" class="primary-btn" type="button">
+            כן, למחוק
+          </button>
+        </div>
+      </div>
+    </div>
 
     <script src="scripts.js"></script>
   </body>
