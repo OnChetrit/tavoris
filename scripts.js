@@ -181,7 +181,7 @@ const initTodayPage = () => {
       locationInput.value = entry.location;
     }
     updateSaveState();
-    
+
     form.scrollIntoView({ behavior: "smooth", block: "start" });
     startInput?.focus();
   });
@@ -240,6 +240,7 @@ const initTodayPage = () => {
     renderRecentEntries(entries);
     renderLocationOptions(entries);
     updateTodayStatus(entries, today);
+    updateQuickRecordButton();
     form.reset();
     dateInput.value = today;
 
@@ -384,6 +385,206 @@ const renderMonthPage = () => {
   render();
 };
 
+const QUICK_RECORD_KEY = "work-hours-quick-record";
+
+const getQuickRecord = () => {
+  const stored = localStorage.getItem(QUICK_RECORD_KEY);
+  return stored ? JSON.parse(stored) : null;
+};
+
+const saveQuickRecord = (record) => {
+  if (record) {
+    localStorage.setItem(QUICK_RECORD_KEY, JSON.stringify(record));
+  } else {
+    localStorage.removeItem(QUICK_RECORD_KEY);
+  }
+};
+
+const formatTime = (timestamp) => {
+  const date = new Date(timestamp);
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+};
+
+const formatElapsedTime = (startTimestamp) => {
+  const now = Date.now();
+  const elapsed = now - startTimestamp;
+  const totalMinutes = Math.floor(elapsed / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours}:${String(minutes).padStart(2, '0')}`;
+};
+
+let timerInterval = null;
+
+const updateQuickRecordButton = () => {
+  const quickBtn = byId("quick-record-btn");
+  const timerDisplay = byId("quick-record-timer");
+  const container = document.querySelector(".quick-record-container");
+
+  if (!quickBtn) return;
+
+  const today = new Date().toISOString().split("T")[0];
+  const record = getQuickRecord();
+  const entries = loadEntries();
+  const todayEntry = entries.find(e => e.date === today);
+
+  // Clear any existing timer interval
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  // If there's already a completed entry for today, hide the button
+  if (todayEntry) {
+    if (container) container.style.display = "none";
+    return;
+  }
+
+  // Show the button if no completed entry exists
+  if (container) container.style.display = "flex";
+
+  // Check if record is for today
+  if (record && record.date !== today) {
+    // Clear old record from previous day
+    saveQuickRecord(null);
+    quickBtn.textContent = "התחל";
+    quickBtn.className = "quick-record-btn state-start";
+    if (timerDisplay) timerDisplay.hidden = true;
+    return;
+  }
+
+  if (record && record.startTime && !record.endTime) {
+    // Recording in progress
+    quickBtn.textContent = "סיום";
+    quickBtn.className = "quick-record-btn state-end";
+
+    // Show and update timer
+    if (timerDisplay) {
+      timerDisplay.hidden = false;
+      const updateTimer = () => {
+        timerDisplay.textContent = formatElapsedTime(record.startTimestamp);
+      };
+      updateTimer();
+      timerInterval = setInterval(updateTimer, 1000); // Update every second
+    }
+  } else {
+    // No active recording
+    quickBtn.textContent = "התחל";
+    quickBtn.className = "quick-record-btn state-start";
+    if (timerDisplay) timerDisplay.hidden = true;
+  }
+};
+
+const initQuickRecord = () => {
+  const quickBtn = byId("quick-record-btn");
+  const quickModal = byId("quick-record-modal");
+  const quickInfo = byId("quick-record-info");
+  const modalClose = byId("quick-modal-close");
+
+  if (!quickBtn) return;
+
+  const today = new Date().toISOString().split("T")[0];
+
+  const showModal = (message) => {
+    if (quickInfo) {
+      quickInfo.innerHTML = message;
+    }
+    if (quickModal) {
+      quickModal.hidden = false;
+    }
+  };
+
+  const closeModal = () => {
+    if (quickModal) {
+      quickModal.hidden = true;
+    }
+  };
+
+  const handleQuickRecord = () => {
+    const now = Date.now();
+    const record = getQuickRecord();
+
+    if (!record || record.date !== today || record.endTime) {
+      // Start new recording
+      const startTime = formatTime(now);
+      saveQuickRecord({
+        date: today,
+        startTime,
+        startTimestamp: now,
+        endTime: null,
+        endTimestamp: null
+      });
+
+      showModal(`
+        <div class="time-display">${startTime}</div>
+        <div class="status-text">⏱️ התחלת משמרת בהצלחה</div>
+      `);
+
+      setTimeout(closeModal, 2000);
+      updateQuickRecordButton();
+    } else if (record.startTime && !record.endTime) {
+      // End recording
+      const endTime = formatTime(now);
+      record.endTime = endTime;
+      record.endTimestamp = now;
+
+      // Calculate hours
+      const hours = toHours(record.startTime, endTime);
+
+      // Save to entries
+      const entries = loadEntries();
+      const entry = {
+        id: crypto.randomUUID(),
+        date: today,
+        start: record.startTime,
+        end: endTime,
+        location: "",
+        hours,
+      };
+
+      const updated = entries.filter((existing) => existing.date !== today);
+      updated.push(entry);
+      saveEntries(updated);
+
+      // Clear quick record
+      saveQuickRecord(null);
+
+      showModal(`
+        <div class="time-display">${hours.toFixed(2)} שעות</div>
+        <div class="status-text">✅ המשמרת נשמרה בהצלחה</div>
+        <div style="margin-top: 0.5rem; font-size: 0.9rem; color: var(--muted);">${record.startTime} - ${endTime}</div>
+      `);
+
+      // Auto-close modal after recording end
+      setTimeout(() => {
+        closeModal();
+        // Refresh the page data
+        const refreshedEntries = loadEntries();
+        renderRecentEntries(refreshedEntries);
+        updateTodayStatus(refreshedEntries, today);
+      }, 2500);
+
+      updateQuickRecordButton();
+    }
+  };
+
+  quickBtn.addEventListener("click", handleQuickRecord);
+
+  modalClose?.addEventListener("click", closeModal);
+
+  quickModal?.addEventListener("click", (event) => {
+    if (event.target === quickModal || event.target.classList.contains('modal-backdrop')) {
+      closeModal();
+    }
+  });
+
+  // Initialize button state
+  updateQuickRecordButton();
+};
+
 initThemeToggle();
 initTodayPage();
 renderMonthPage();
+initQuickRecord();

@@ -1,0 +1,11 @@
+{
+  "name": "tavori-work-static",
+  "private": true,
+  "scripts": {
+    "build": "sass styles.scss styles.css --no-source-map --style=expanded",
+    "dev": "sass --watch styles.scss:styles.css"
+  },
+  "devDependencies": {
+    "sass": "^1.86.0"
+  }
+}
