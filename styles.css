@@ -533,3 +533,101 @@ body {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
+.quick-record-container {
+  position: fixed;
+  bottom: 2rem;
+  left: calc(50% - 45px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  z-index: 40;
+}
+
+.quick-record-btn {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, background 0.3s ease;
+
+  &.state-start {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  }
+
+  &.state-end {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  }
+
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.quick-record-timer {
+  background: var(--card);
+  color: var(--text);
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 2px solid var(--primary);
+  white-space: nowrap;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: var(--row-bg);
+  }
+}
+
+.quick-record-info {
+  padding: 1rem;
+  background: var(--row-bg);
+  border-radius: 12px;
+  font-size: 1.1rem;
+  text-align: center;
+
+  .time-display {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0.5rem 0;
+  }
+
+  .status-text {
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
+}

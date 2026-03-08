@@ -95,6 +95,24 @@
       </section>
     </main>
 
+    <!-- Quick Record Button -->
+    <div class="quick-record-container">
+      <button id="quick-record-btn" class="quick-record-btn" type="button">
+        התחל
+      </button>
+      <div id="quick-record-timer" class="quick-record-timer" hidden></div>
+    </div>
+
+    <!-- Quick Record Modal -->
+    <div id="quick-record-modal" class="modal" hidden>
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <button type="button" class="modal-close" id="quick-modal-close" aria-label="סגור">×</button>
+        <h2>דיווח מהיר</h2>
+        <div id="quick-record-info" class="quick-record-info"></div>
+      </div>
+    </div>
+
     <script src="scripts.js"></script>
   </body>
 </html>
