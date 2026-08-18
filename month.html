@@ -3,35 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>סיכום חודשי</title>
+    <title>תבורי'ס — סיכום חודשי</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <header class="app-header">
       <div class="header-row">
-        <h1>סיכום חודשי</h1>
+        <a class="brand" href="index.html" aria-label="תבורי'ס — לדף הבית">
+          <span class="brand-mark" aria-hidden="true">T</span>
+          <span class="brand-copy">
+            <strong>תבורי׳ס</strong>
+            <small>מעקב שעות אישי</small>
+          </span>
+        </a>
         <button
           id="theme-toggle"
           class="theme-toggle"
           type="button"
           aria-label="החלפת מצב תצוגה"
         >
-          🌙
+          <span aria-hidden="true">🌙</span>
         </button>
       </div>
       <nav class="app-nav">
-        <a class="nav-link" href="index.html">דיווח</a>
-        <a class="nav-link" href="month.html" aria-current="page">חודשי</a>
+        <a class="nav-link" href="index.html"><span aria-hidden="true">◷</span>דיווח</a>
+        <a class="nav-link" href="month.html" aria-current="page"><span aria-hidden="true">▦</span>חודשי</a>
       </nav>
     </header>
 
     <main class="container">
-      <section class="card">
+      <section class="hero-card hero-card--month">
+        <div class="hero-copy">
+          <p class="eyebrow">תמונת מצב</p>
+          <h1>החודש שלך, במבט אחד.</h1>
+          <p class="hero-date">עקבו אחרי שעות העבודה והתכנון שלכם.</p>
+        </div>
+        <div class="hero-orb" aria-hidden="true"><span>◔</span></div>
+      </section>
+
+      <section class="card month-card">
         <div class="month-header">
-          <section>
-            <label for="month-picker">חודש</label>
+          <div class="month-picker-field">
+            <label for="month-picker">החודש הנבחר</label>
             <input lang="he" type="month" id="month-picker" name="month-picker" />
-          </section>
+          </div>
           <div class="month-actions">
             <button id="export-csv" class="ghost-btn" type="button">
               ייצוא לגיליון
@@ -57,6 +72,16 @@
           <div class="metric">
             <span class="metric-label">ממוצע ליום</span>
             <span class="metric-value" id="month-average">0.0</span>
+          </div>
+        </div>
+
+        <div class="monthly-progress" aria-label="התקדמות ליעד חודשי">
+          <div class="progress-heading">
+            <span>התקדמות ליעד חודשי</span>
+            <strong id="month-progress-label">0 מתוך 182 שעות</strong>
+          </div>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="182" aria-valuenow="0" aria-labelledby="month-progress-label">
+            <span id="month-progress-bar"></span>
           </div>
         </div>
 

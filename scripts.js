@@ -1,5 +1,11 @@
 const STORAGE_KEY = "work-hours-entries";
 const THEME_KEY = "work-hours-theme";
+const SHORTCUTS_KEY = "work-hours-shortcuts";
+const DEFAULT_SHORTCUTS = [
+  { id: "default-0800-1700", start: "08:00", end: "17:00" },
+  { id: "default-0900-1800", start: "09:00", end: "18:00" },
+  { id: "default-0830-1630", start: "08:30", end: "16:30" },
+];
 
 const byId = (id) => document.getElementById(id);
 
@@ -7,7 +13,10 @@ const applyTheme = (theme) => {
   document.documentElement.setAttribute("data-theme", theme);
   const toggle = byId("theme-toggle");
   if (toggle) {
-    toggle.textContent = theme === "dark" ? "☀️" : "🌙";
+    const nextTheme = theme === "dark" ? "בהיר" : "כהה";
+    toggle.innerHTML = `<span aria-hidden="true">${theme === "dark" ? "☀️" : "🌙"}</span>`;
+    toggle.setAttribute("aria-label", `מעבר למצב ${nextTheme}`);
+    toggle.title = `מעבר למצב ${nextTheme}`;
   }
 };
 
@@ -30,6 +39,9 @@ const initThemeToggle = () => {
 };
 
 const toHours = (start, end) => {
+  if (!isValidTime(start) || !isValidTime(end)) {
+    return 0;
+  }
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
   const startMinutes = sh * 60 + sm;
@@ -38,13 +50,75 @@ const toHours = (start, end) => {
   return diff > 0 ? diff / 60 : 0;
 };
 
+function isValidTime(value) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+const normalizeTimeString = (value) => {
+  const digits = String(value).replace(/\D/g, "").slice(0, 4);
+  return digits.length > 2
+    ? `${digits.slice(0, 2)}:${digits.slice(2)}`
+    : digits;
+};
+
+const formatHours = (hours) => {
+  const totalMinutes = Math.round(hours * 60);
+  const wholeHours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return minutes ? `${wholeHours}:${String(minutes).padStart(2, "0")} שעות` : `${wholeHours} שעות`;
+};
+
+const escapeHtml = (value = "") =>
+  String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const getLocalDateValue = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const loadEntries = () => {
   const stored = localStorage.getItem(STORAGE_KEY);
-  return stored ? JSON.parse(stored) : [];
+  if (!stored) return [];
+  try {
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 };
 
 const saveEntries = (entries) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+};
+
+const loadShortcuts = () => {
+  const stored = localStorage.getItem(SHORTCUTS_KEY);
+  if (!stored) return [...DEFAULT_SHORTCUTS];
+  try {
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [...DEFAULT_SHORTCUTS];
+    return parsed.filter(
+      (shortcut) =>
+        shortcut &&
+        typeof shortcut.id === "string" &&
+        isValidTime(shortcut.start) &&
+        isValidTime(shortcut.end) &&
+        toHours(shortcut.start, shortcut.end) > 0
+    );
+  } catch {
+    return [...DEFAULT_SHORTCUTS];
+  }
+};
+
+const saveShortcuts = (shortcuts) => {
+  localStorage.setItem(SHORTCUTS_KEY, JSON.stringify(shortcuts));
 };
 
 const sortEntries = (entries) =>
@@ -75,8 +149,8 @@ const renderRecentEntries = (entries) => {
 
   if (entries.length === 0) {
     const empty = document.createElement("li");
-    empty.className = "list-item";
-    empty.textContent = "אין עדיין רישומים. הוסף משמרת ראשונה.";
+    empty.className = "list-item empty-state";
+    empty.textContent = "אין עדיין רישומים. הדיווח הראשון שלך יופיע כאן.";
     list.appendChild(empty);
     return;
   }
@@ -88,10 +162,10 @@ const renderRecentEntries = (entries) => {
       item.className = "list-item";
       item.dataset.entryId = entry.id;
       item.innerHTML = `
-        <strong class="entry-date">${formatDisplayDate(entry.date)}</strong>
-        <span class="entry-time">${entry.start} → ${entry.end}</span>
-        <span class="entry-location">${entry.location}</span>
-        <span class="entry-hours">${entry.hours.toFixed(2)} שעות</span>
+        <strong class="entry-date">${escapeHtml(formatDisplayDate(entry.date))}</strong>
+        <span class="entry-time">${escapeHtml(entry.start)} → ${escapeHtml(entry.end)}</span>
+        <span class="entry-location">${escapeHtml(entry.location || "ללא מיקום")}</span>
+        <span class="entry-hours">${formatHours(entry.hours)}</span>
       `;
       list.appendChild(item);
     });
@@ -143,7 +217,17 @@ const updateTodaySummary = (entry) => {
     summary.textContent = "";
     return;
   }
-  summary.textContent = `נשמרו ${entry.hours.toFixed(2)} שעות בתאריך ${entry.date}.`;
+  summary.textContent = `✓ נשמרו ${formatHours(entry.hours)} בתאריך ${formatDisplayDate(entry.date)}.`;
+};
+
+const updateTodayDate = () => {
+  const target = byId("today-date");
+  if (!target) return;
+  target.textContent = new Intl.DateTimeFormat("he-IL", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
 };
 
 const initTodayPage = () => {
@@ -154,7 +238,19 @@ const initTodayPage = () => {
   const saveButton = byId("save-button");
   const startInput = byId("start-time");
   const endInput = byId("end-time");
-  const today = new Date().toISOString().split("T")[0];
+  const startTimePicker = byId("start-time-picker");
+  const endTimePicker = byId("end-time-picker");
+  const durationPreview = byId("duration-preview");
+  const shortcutsContainer = byId("quick-times-options");
+  const manageShortcutsButton = byId("manage-shortcuts");
+  const shortcutsModal = byId("shortcuts-modal");
+  const shortcutsClose = byId("shortcuts-close");
+  const shortcutsList = byId("shortcuts-list");
+  const shortcutForm = byId("shortcut-form");
+  const shortcutStart = byId("shortcut-start");
+  const shortcutEnd = byId("shortcut-end");
+  const shortcutFormMessage = byId("shortcut-form-message");
+  const today = getLocalDateValue();
   dateInput.value = today;
   dateInput.max = today;
 
@@ -192,10 +288,171 @@ const initTodayPage = () => {
     const end = endInput?.value || "";
     const hours = start && end ? toHours(start, end) : 0;
     saveButton.disabled = hours <= 0;
+    if (durationPreview) {
+      durationPreview.hidden = hours <= 0;
+      durationPreview.textContent = hours > 0 ? formatHours(hours) : "";
+    }
   };
 
-  startInput?.addEventListener("input", updateSaveState);
-  endInput?.addEventListener("input", updateSaveState);
+  const formatManualTime = (input) => {
+    input.value = normalizeTimeString(input.value);
+    const complete = isValidTime(input.value);
+    input.setCustomValidity(
+      input.value && !complete ? "יש להזין שעה בפורמט 08:00" : ""
+    );
+  };
+
+  const handleTimeInput = (event) => {
+    formatManualTime(event.currentTarget);
+    updateSaveState();
+  };
+
+  [startInput, endInput].forEach((input) => {
+    input?.addEventListener("input", handleTimeInput);
+    input?.addEventListener("blur", () => formatManualTime(input));
+  });
+
+  [[startTimePicker, startInput], [endTimePicker, endInput]].forEach(
+    ([picker, input]) => {
+      picker?.addEventListener("input", () => {
+        input.value = picker.value;
+        formatManualTime(input);
+        updateSaveState();
+      });
+    }
+  );
+
+  let shortcuts = loadShortcuts();
+  const renderShortcuts = () => {
+    if (!shortcutsContainer) return;
+    shortcutsContainer.innerHTML = "";
+
+    if (shortcuts.length === 0) {
+      const empty = document.createElement("span");
+      empty.className = "shortcuts-empty";
+      empty.textContent = "אין קיצורים עדיין — אפשר להוסיף דרך ניהול.";
+      shortcutsContainer.appendChild(empty);
+      return;
+    }
+
+    shortcuts.forEach((shortcut) => {
+      const button = document.createElement("button");
+      button.className = "time-preset";
+      button.type = "button";
+      button.dataset.shortcutId = shortcut.id;
+      button.dataset.start = shortcut.start;
+      button.dataset.end = shortcut.end;
+      button.innerHTML = `<span>${shortcut.start}–${shortcut.end}</span><small>${formatHours(toHours(shortcut.start, shortcut.end))}</small>`;
+      shortcutsContainer.appendChild(button);
+    });
+  };
+
+  const renderShortcutsManager = () => {
+    if (!shortcutsList) return;
+    shortcutsList.innerHTML = "";
+    if (shortcuts.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "shortcuts-manager-empty";
+      empty.textContent = "עדיין לא הוספתם קיצורי דרך.";
+      shortcutsList.appendChild(empty);
+      return;
+    }
+
+    shortcuts.forEach((shortcut) => {
+      const item = document.createElement("li");
+      item.className = "shortcut-manager-item";
+      item.innerHTML = `<span><strong>${shortcut.start}–${shortcut.end}</strong><small>${formatHours(toHours(shortcut.start, shortcut.end))}</small></span>`;
+      const removeButton = document.createElement("button");
+      removeButton.className = "shortcut-remove";
+      removeButton.type = "button";
+      removeButton.dataset.shortcutId = shortcut.id;
+      removeButton.setAttribute("aria-label", `הסרת קיצור ${shortcut.start} עד ${shortcut.end}`);
+      removeButton.textContent = "הסרה";
+      item.appendChild(removeButton);
+      shortcutsList.appendChild(item);
+    });
+  };
+
+  const closeShortcutsModal = () => {
+    if (shortcutsModal) shortcutsModal.hidden = true;
+  };
+
+  shortcutsContainer?.addEventListener("click", (event) => {
+    const button = event.target.closest(".time-preset");
+    if (!button) return;
+    startInput.value = button.dataset.start || "";
+    endInput.value = button.dataset.end || "";
+    shortcutsContainer.querySelectorAll(".time-preset").forEach((preset) =>
+      preset.classList.toggle("is-selected", preset === button)
+    );
+    updateSaveState();
+    endInput.focus();
+  });
+
+  manageShortcutsButton?.addEventListener("click", () => {
+    renderShortcutsManager();
+    if (shortcutFormMessage) shortcutFormMessage.textContent = "";
+    if (shortcutsModal) shortcutsModal.hidden = false;
+    shortcutStart?.focus();
+  });
+
+  shortcutsClose?.addEventListener("click", closeShortcutsModal);
+  shortcutsModal?.addEventListener("click", (event) => {
+    if (event.target?.dataset?.shortcutsClose) closeShortcutsModal();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !shortcutsModal?.hidden) {
+      closeShortcutsModal();
+      manageShortcutsButton?.focus();
+    }
+  });
+
+  [shortcutStart, shortcutEnd].forEach((input) => {
+    input?.addEventListener("input", () => {
+      input.value = normalizeTimeString(input.value);
+      input.setCustomValidity(
+        input.value && !isValidTime(input.value) ? "יש להזין שעה בפורמט 08:00" : ""
+      );
+    });
+  });
+
+  shortcutsList?.addEventListener("click", (event) => {
+    const removeButton = event.target.closest(".shortcut-remove");
+    if (!removeButton) return;
+    shortcuts = shortcuts.filter(
+      (shortcut) => shortcut.id !== removeButton.dataset.shortcutId
+    );
+    saveShortcuts(shortcuts);
+    renderShortcuts();
+    renderShortcutsManager();
+  });
+
+  shortcutForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const start = shortcutStart?.value || "";
+    const end = shortcutEnd?.value || "";
+    const duplicate = shortcuts.some(
+      (shortcut) => shortcut.start === start && shortcut.end === end
+    );
+    if (!isValidTime(start) || !isValidTime(end) || toHours(start, end) <= 0) {
+      if (shortcutFormMessage) shortcutFormMessage.textContent = "בחרו שעות תקינות, כששעת הסיום אחרי שעת ההתחלה.";
+      return;
+    }
+    if (duplicate) {
+      if (shortcutFormMessage) shortcutFormMessage.textContent = "הקיצור הזה כבר קיים.";
+      return;
+    }
+    shortcuts.push({ id: crypto.randomUUID(), start, end });
+    shortcuts.sort((a, b) => a.start.localeCompare(b.start));
+    saveShortcuts(shortcuts);
+    renderShortcuts();
+    renderShortcutsManager();
+    shortcutForm.reset();
+    if (shortcutFormMessage) shortcutFormMessage.textContent = "הקיצור נוסף בהצלחה.";
+    shortcutStart?.focus();
+  });
+
+  renderShortcuts();
   updateSaveState();
 
   form.addEventListener("submit", (event) => {
@@ -243,6 +500,9 @@ const initTodayPage = () => {
     updateQuickRecordButton();
     form.reset();
     dateInput.value = today;
+    shortcutsContainer?.querySelectorAll(".time-preset").forEach((preset) =>
+      preset.classList.remove("is-selected")
+    );
 
     if (saveButton) {
       saveButton.classList.remove("is-loading");
@@ -252,7 +512,7 @@ const initTodayPage = () => {
   });
 };
 
-const formatMonth = (date) => date.toISOString().slice(0, 7);
+const formatMonth = (date) => getLocalDateValue(date).slice(0, 7);
 
 const renderMonthPage = () => {
   const monthPicker = byId("month-picker");
@@ -262,6 +522,9 @@ const renderMonthPage = () => {
   const totalEl = byId("month-total");
   const countEl = byId("month-count");
   const avgEl = byId("month-average");
+  const progressLabel = byId("month-progress-label");
+  const progressBar = byId("month-progress-bar");
+  const progressTrack = document.querySelector(".progress-track");
   const clearButton = byId("clear-month");
   const exportCsvButton = byId("export-csv");
   const exportPdfButton = byId("export-pdf");
@@ -291,10 +554,10 @@ const renderMonthPage = () => {
         .forEach((entry) => {
           const row = document.createElement("tr");
           row.innerHTML = `
-            <td data-label="תאריך">${formatDisplayDate(entry.date)}</td>
-            <td data-label="שעות">${entry.start} - ${entry.end}</td>
-            <td data-label="שעות">${entry.hours.toFixed(2)}</td>
-            <td data-label="מיקום">${entry.location}</td>
+            <td data-label="תאריך">${escapeHtml(formatDisplayDate(entry.date))}</td>
+            <td data-label="שעות">${escapeHtml(entry.start)} - ${escapeHtml(entry.end)}</td>
+            <td data-label="סה״כ">${formatHours(entry.hours)}</td>
+            <td data-label="מיקום">${escapeHtml(entry.location || "ללא מיקום")}</td>
           `;
           rows.appendChild(row);
         });
@@ -306,6 +569,14 @@ const renderMonthPage = () => {
     avgEl.textContent = filtered.length
       ? (total / filtered.length).toFixed(2)
       : "0.0";
+
+    const monthlyTarget = 182;
+    const percent = Math.min((total / monthlyTarget) * 100, 100);
+    if (progressLabel) {
+      progressLabel.textContent = `${total.toFixed(1)} מתוך ${monthlyTarget} שעות`;
+    }
+    if (progressBar) progressBar.style.width = `${percent}%`;
+    if (progressTrack) progressTrack.setAttribute("aria-valuenow", String(Math.round(total)));
   };
 
   monthPicker.addEventListener("change", render);
@@ -425,24 +696,15 @@ const updateQuickRecordButton = () => {
 
   if (!quickBtn) return;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateValue();
   const record = getQuickRecord();
-  const entries = loadEntries();
-  const todayEntry = entries.find(e => e.date === today);
-
   // Clear any existing timer interval
   if (timerInterval) {
     clearInterval(timerInterval);
     timerInterval = null;
   }
 
-  // If there's already a completed entry for today, hide the button
-  if (todayEntry) {
-    if (container) container.style.display = "none";
-    return;
-  }
-
-  // Show the button if no completed entry exists
+  // Keep the one-tap timer available even after a same-day report.
   if (container) container.style.display = "flex";
 
   // Check if record is for today
@@ -485,7 +747,7 @@ const initQuickRecord = () => {
 
   if (!quickBtn) return;
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateValue();
 
   const showModal = (message) => {
     if (quickInfo) {
@@ -585,6 +847,7 @@ const initQuickRecord = () => {
 };
 
 initThemeToggle();
+updateTodayDate();
 initTodayPage();
 renderMonthPage();
 initQuickRecord();
